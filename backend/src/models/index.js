@@ -3,3 +3,6 @@ export { default as Role } from "./Role.js";
 export { default as Permission } from "./Permission.js";
 export { default as UserRole } from "./UserRole.js";
 export { default as RolePermission } from "./RolePermission.js";
+export { default as GiveawayItem } from "./GiveawayItem.js";
+export { default as GiveawayInventoryTransaction } from "./GiveawayInventoryTransaction.js";
+export { default as GiveawayIssue } from "./GiveawayIssue.js";
