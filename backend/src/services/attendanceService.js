@@ -12,6 +12,10 @@ const startOfDay = (date) => {
 };
 
 export const attendanceService = {
+  async getToday(userId) {
+    return attendanceRepository.findTodayForUser(userId);
+  },
+
   async clockIn(userId) {
     const now = new Date();
     const existing = await attendanceRepository.findTodayForUser(userId, now);
