@@ -1,5 +1,5 @@
 import { attendanceRepository } from "../repositories/attendanceRepository.js";
-import { ConflictError, NotFoundError } from "../errors/AppError.js";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors/AppError.js";
 
 // Below this many worked minutes in a day, status is "half-day" instead of
 // "present". (Overtime — worked minutes ABOVE a threshold — is Story 2.1.)
@@ -13,6 +13,11 @@ const startOfDay = (date) => {
   d.setUTCHours(0, 0, 0, 0);
   return d;
 };
+
+const minutesBetween = (from, to) => Math.max(0, Math.round((to - from) / 60000));
+
+const statusForWorkedMinutes = (minutes) =>
+  minutes < HALF_DAY_THRESHOLD_MINUTES ? "half-day" : "present";
 
 export const attendanceService = {
   async getToday(userId) {
@@ -74,9 +79,44 @@ export const attendanceService = {
       throw new ConflictError("Already clocked out today");
     }
 
-    const workedMinutes = Math.max(0, Math.round((now - record.clockIn) / 60000));
-    const status = workedMinutes < HALF_DAY_THRESHOLD_MINUTES ? "half-day" : "present";
+    const workedMinutes = minutesBetween(record.clockIn, now);
+    const status = statusForWorkedMinutes(workedMinutes);
 
     return attendanceRepository.updateById(record._id, { clockOut: now, workedMinutes, status });
+  },
+
+  // Manager/admin correction. Changing clock times recomputes workedMinutes and
+  // status (same rules as clockOut); an explicit status in the payload wins.
+  async update(id, { clockIn, clockOut, status, notes }) {
+    const record = await attendanceRepository.findById(id);
+    if (!record) {
+      throw new NotFoundError("Attendance record not found");
+    }
+
+    const newClockIn = clockIn ? new Date(clockIn) : record.clockIn;
+    const newClockOut = clockOut ? new Date(clockOut) : record.clockOut;
+
+    // record.date is the one-record-per-day key, so clockIn can't move to another day.
+    if (clockIn && startOfDay(newClockIn).getTime() !== record.date.getTime()) {
+      throw new BadRequestError("clockIn must fall on the record's date");
+    }
+    if (newClockOut && !newClockIn) {
+      throw new BadRequestError("clockOut requires a clockIn");
+    }
+    if (newClockOut && newClockOut < newClockIn) {
+      throw new BadRequestError("clockOut must not be before clockIn");
+    }
+
+    const changes = {};
+    if (clockIn) changes.clockIn = newClockIn;
+    if (clockOut) changes.clockOut = newClockOut;
+    if (notes !== undefined) changes.notes = notes;
+    if (newClockIn && newClockOut && (clockIn || clockOut)) {
+      changes.workedMinutes = minutesBetween(newClockIn, newClockOut);
+      changes.status = statusForWorkedMinutes(changes.workedMinutes);
+    }
+    if (status) changes.status = status;
+
+    return attendanceRepository.updateById(id, changes);
   },
 };

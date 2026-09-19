@@ -30,6 +30,20 @@ export const attendanceController = {
     });
   }),
 
+  update: asyncHandler(async (req, res) => {
+    const { clockIn, clockOut, status, notes } = req.body;
+    const attendance = await attendanceService.update(req.params.id, {
+      clockIn,
+      clockOut,
+      status,
+      notes,
+    });
+    sendSuccess(res, {
+      message: "Attendance updated successfully",
+      data: { attendance },
+    });
+  }),
+
   clockIn: asyncHandler(async (req, res) => {
     const attendance = await attendanceService.clockIn(req.userId);
     sendSuccess(res, {
