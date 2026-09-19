@@ -7,26 +7,16 @@ import Button from "../common/Button";
 import Badge from "../common/Badge";
 import ErrorState from "../common/ErrorState";
 import { CardSkeleton } from "../common/Loading";
+import { formatTime, formatDuration, statusBadgeKey } from "../../utils/attendanceFormat";
 
 const TICK_MS = 30_000;
-
-// API status -> key in config/theme.js statusStyles.
-const badgeKey = { present: "present", absent: "absent", "half-day": "halfDay", late: "late" };
-
-const formatTime = (iso) =>
-  new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-const formatDuration = (minutes) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-};
 
 /**
  * Self-service clock-in/out for the signed-in user: today's status, live
  * time worked while clocked in, and the single action that makes sense next.
+ * `onChange` fires after a successful clock-in/out so siblings can refresh.
  */
-export default function ClockWidget() {
+export default function ClockWidget({ onChange }) {
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -74,6 +64,7 @@ export default function ClockWidget() {
     try {
       setAttendance(await action());
       setNow(Date.now());
+      onChange?.();
     } catch (err) {
       setActionError(err?.response?.data?.message || fallbackMessage);
       // 409 = another tab/device already did this; resync with the server.
@@ -134,7 +125,7 @@ export default function ClockWidget() {
           <p className="text-helper text-ink-muted">{hint}</p>
           {clockedOut && (
             <div className="mt-1">
-              <Badge status={badgeKey[attendance.status]} />
+              <Badge status={statusBadgeKey[attendance.status]} />
             </div>
           )}
         </div>
