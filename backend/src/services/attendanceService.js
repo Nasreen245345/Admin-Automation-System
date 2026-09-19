@@ -19,12 +19,15 @@ export const attendanceService = {
     return attendanceRepository.findTodayForUser(userId);
   },
 
-  async list({ userId, status, startDate, endDate, page, pageSize } = {}) {
+  // Users with canViewAll (attendance.update) may filter by any userId, or omit
+  // it to see everyone; everyone else is always scoped to their own records.
+  async list({ requesterId, canViewAll = false, userId, status, startDate, endDate, page, pageSize }) {
+    const scopedUserId = canViewAll ? userId : requesterId;
     const safePage = Math.max(1, parseInt(page, 10) || 1);
     const safePageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(pageSize, 10) || DEFAULT_PAGE_SIZE));
 
     const { items, totalItems } = await attendanceRepository.list({
-      userId,
+      userId: scopedUserId,
       status,
       startDate,
       endDate,

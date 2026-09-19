@@ -11,6 +11,25 @@ export const attendanceController = {
     });
   }),
 
+  list: asyncHandler(async (req, res) => {
+    const { userId, status, startDate, endDate, page, pageSize } = req.query;
+    const { items, pagination } = await attendanceService.list({
+      requesterId: req.userId,
+      canViewAll: req.permissions.includes("attendance.update"),
+      userId,
+      status,
+      startDate,
+      endDate,
+      page,
+      pageSize,
+    });
+    sendSuccess(res, {
+      message: "Attendance records",
+      data: { attendance: items },
+      meta: pagination,
+    });
+  }),
+
   clockIn: asyncHandler(async (req, res) => {
     const attendance = await attendanceService.clockIn(req.userId);
     sendSuccess(res, {

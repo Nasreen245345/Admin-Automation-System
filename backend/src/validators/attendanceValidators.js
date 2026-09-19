@@ -1,4 +1,4 @@
-import { validationResult } from "express-validator";
+import { query, validationResult } from "express-validator";
 import { BadRequestError } from "../errors/AppError.js";
 
 export const runValidation = (req, res, next) => {
@@ -19,3 +19,28 @@ export const runValidation = (req, res, next) => {
 export const clockInValidator = [runValidation];
 
 export const clockOutValidator = [runValidation];
+
+export const listAttendanceValidator = [
+  query("page").optional().isInt({ min: 1 }).withMessage("page must be a positive integer"),
+  query("pageSize")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("pageSize must be between 1 and 100"),
+  query("status")
+    .optional()
+    .isIn(["present", "absent", "half-day", "late"])
+    .withMessage("status must be one of: present, absent, half-day, late"),
+  query("userId").optional().isMongoId().withMessage("userId must be a valid id"),
+  query("startDate").optional().isISO8601().withMessage("startDate must be a valid date"),
+  query("endDate")
+    .optional()
+    .isISO8601()
+    .withMessage("endDate must be a valid date")
+    .custom((value, { req }) => {
+      if (req.query.startDate && new Date(value) < new Date(req.query.startDate)) {
+        throw new Error("endDate must not be before startDate");
+      }
+      return true;
+    }),
+  runValidation,
+];
