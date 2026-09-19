@@ -16,6 +16,7 @@ import NotificationsPage from "../pages/notifications/NotificationsPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 import SettingsPage from "../pages/settings/SettingsPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import ComingSoon from "../components/common/ComingSoon";
 
 /**
  * Central route map. Public routes (login/register/unauthorized) sit
@@ -42,9 +43,17 @@ export default function AppRoutes() {
           <Route path="/generator" element={<GeneratorPage />} />
           <Route path="/generator/logs" element={<GeneratorPage />} />
           <Route path="/generator/maintenance" element={<GeneratorPage />} />
-          <Route path="/attendance" element={<AttendancePage />} />
-          <Route path="/attendance/overtime" element={<AttendancePage />} />
-          <Route path="/attendance/leave" element={<AttendancePage />} />
+          <Route element={<ProtectedRoute permission="attendance.read" />}>
+            <Route path="/attendance" element={<AttendancePage />} />
+          </Route>
+          <Route
+            path="/attendance/overtime"
+            element={<ComingSoon title="Overtime" moduleLabel="Module 5 — Attendance & Overtime" />}
+          />
+          <Route
+            path="/attendance/leave"
+            element={<ComingSoon title="Leave" moduleLabel="Module 5 — Attendance & Overtime" />}
+          />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
