@@ -5,6 +5,9 @@ import { ConflictError, NotFoundError } from "../errors/AppError.js";
 // "present". (Overtime — worked minutes ABOVE a threshold — is Story 2.1.)
 const HALF_DAY_THRESHOLD_MINUTES = 240;
 
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
 const startOfDay = (date) => {
   const d = new Date(date);
   d.setUTCHours(0, 0, 0, 0);
@@ -14,6 +17,30 @@ const startOfDay = (date) => {
 export const attendanceService = {
   async getToday(userId) {
     return attendanceRepository.findTodayForUser(userId);
+  },
+
+  async list({ userId, status, startDate, endDate, page, pageSize } = {}) {
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const safePageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(pageSize, 10) || DEFAULT_PAGE_SIZE));
+
+    const { items, totalItems } = await attendanceRepository.list({
+      userId,
+      status,
+      startDate,
+      endDate,
+      page: safePage,
+      pageSize: safePageSize,
+    });
+
+    return {
+      items,
+      pagination: {
+        page: safePage,
+        pageSize: safePageSize,
+        totalItems,
+        totalPages: Math.ceil(totalItems / safePageSize),
+      },
+    };
   },
 
   async clockIn(userId) {
